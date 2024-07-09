@@ -5,7 +5,7 @@ import java.io.IOException;
 public class Main {
     public static void main(String[] args) {
         try {
-            Server server = new Server(5001);
+            Server server = new Server(5005);
             server.listen();
 
         } catch (IOException e) {

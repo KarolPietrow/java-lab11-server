@@ -31,4 +31,21 @@ public class Server {
         }
     }
 
+    public void kickClient(ClientThread client) {
+        clients.remove(client);
+    }
+
+    public List<ClientThread> getClients() {
+        return clients;
+    }
+
+    public ClientThread getClientUsername(String name) {
+        for (ClientThread client : clients) {
+            if (client.getUsername().equals(name)) {
+                return client;
+            }
+        }
+        return null;
+    }
+
 }

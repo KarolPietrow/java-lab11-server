@@ -30,13 +30,30 @@ public class ClientThread extends Thread {
             String rawMessage;
             while((rawMessage = reader.readLine()) != null) {
                 Message message = new ObjectMapper().readValue(rawMessage, Message.class);
+                message.username = this.username;
                 switch (message.type) {
-                    case Broadcast -> server.broadcast(message);
-                    case Login -> login(message.content);
+                    case Broadcast -> {
+                            server.broadcast(message);
+                    }
+                    case DM -> {
+                        directMessage(message);
+                    }
+                    case Login -> {
+                    login(message.content);
+                    System.out.println("Użytkownik " + message.content + " dołączył.");
+                    server.broadcast(new Message(Message.MessageType.Login, "Użytkownik " + message.content + " dołączył."));
+                    }
+                    case Disconnect -> {
+                    server.broadcast(new Message(Message.MessageType.Disconnect, "Użytkownik " + message.content + " opuścił czat."));
+                    System.out.println("Użytkownik " + message.content + " opuścił czat.");
+                    }
+                    case UserList -> userList();
                 }
             }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        } catch (IOException e) {} finally {
+            try { client.close(); } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -47,7 +64,24 @@ public class ClientThread extends Thread {
 
     public void login(String username) throws JsonProcessingException {
         this.username = username;
-        Message message = new Message(Message.MessageType.Broadcast, "Użytkownik " + username + "dołączył.");
-        send(message);
     }
+
+    public void userList() throws JsonProcessingException {
+        StringBuilder list = new StringBuilder("Lista aktywnych użytkowników na czacie: ");
+        for (ClientThread client : server.getClients()) {
+            list.append(client.getUsername()).append("; ");
+        }
+        send(new Message(Message.MessageType.Broadcast, list.toString(), "SYSTEM"));
+    }
+
+    private void directMessage(Message message) throws JsonProcessingException {
+        ClientThread recipient = server.getClientUsername(message.recipient);
+        if (recipient != null) {
+            recipient.send(new Message(Message.MessageType.DM, message.content, username));
+            send(new Message(Message.MessageType.DM, "Wiadomość prywatna wysłana", "SYSTEM"));
+        } else {
+            send(new Message(Message.MessageType.DM, "Nie znaleziono użytkownika " + message.recipient, "SYSTEM"));
+        }
+    }
+
 }
